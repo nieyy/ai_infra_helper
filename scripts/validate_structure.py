@@ -38,6 +38,8 @@ DOCS_ALLOWED_DIRS = {
     "test-reports",
 }
 DOCS_REQUIRED_DIRS = DOCS_ALLOWED_DIRS
+DOCS_ALLOWED_ASSET_DIRS = {"research": {"assets"}}
+ASSET_EXTENSIONS = {".gif", ".jpeg", ".jpg", ".png", ".svg", ".webp"}
 
 DATED_DOCUMENT_RE = re.compile(
     r"^\d{4}-\d{2}-\d{2}-[a-z0-9][a-z0-9-]*-(?:en|zh)\.md$"
@@ -118,9 +120,22 @@ def validate_docs(root: Path, errors: list[str], warnings: list[str]) -> None:
         pattern = naming_rules.get(category, DATED_DOCUMENT_RE)
         for path in category_path.iterdir():
             if path.is_dir():
-                errors.append(
-                    f"unexpected nested directory: docs/{category}/{path.name}/"
-                )
+                if path.name not in DOCS_ALLOWED_ASSET_DIRS.get(category, set()):
+                    errors.append(
+                        f"unexpected nested directory: docs/{category}/{path.name}/"
+                    )
+                    continue
+                for asset in path.iterdir():
+                    if asset.is_dir():
+                        errors.append(
+                            f"unexpected nested asset directory: "
+                            f"docs/{category}/{path.name}/{asset.name}/"
+                        )
+                    elif asset.suffix.lower() not in ASSET_EXTENSIONS:
+                        errors.append(
+                            f"unsupported asset file: "
+                            f"docs/{category}/{path.name}/{asset.name}"
+                        )
             elif path.name != ".gitkeep" and not pattern.fullmatch(path.name):
                 warnings.append(
                     f"non-standard document name: docs/{category}/{path.name}"

@@ -130,6 +130,10 @@
   -> [流式 Token 返回 + Metrics / Logs / Traces]
 ```
 
+![Enterprise LLM inference end-to-end flow](assets/2026-08-04-enterprise-llm-inference-flow-en.png)
+
+*图 1：传统企业大模型推理服务的端到端通用链路（英文）。*
+
 - 重要行为: Prefill 处理完整输入，计算密集；Decode 逐 Token 生成，显存带宽与 KV Cache 密集。连续批处理让新请求动态进入批次；KV Cache 管理直接影响并发、吞吐和显存利用率。
 - 边界 / 归属: 三个开源项目解决“模型执行与 serving engine”，但企业仍需自行提供身份认证、TLS/WAF、模型仓库、发布系统、配额、审计、容灾和成本治理，除非采购厂商商业平台。
 - 运行时或运维注意点: 驱动、CUDA/NPU SDK、PyTorch、通信库、量化格式、模型实现和引擎版本强耦合；不能把普通无状态 Web 服务的滚动升级经验原样套用到多卡模型服务。
@@ -144,6 +148,10 @@
   -> [Attention / MoE Kernels + TP/PP/DP/EP]
   -> [可选 Prefill-Decode 分离与跨节点 KV 传输]
 ```
+
+![SGLang prefix-aware serving architecture](assets/2026-08-04-sglang-serving-architecture-en.png)
+
+*图 2：以 RadixAttention 前缀复用和可选 PD 分离为中心的 SGLang 架构（英文）。*
 
 核心机制：
 
@@ -166,6 +174,10 @@
   -> [Attention / GEMM / MoE Kernels]
   -> [TP/PP/DP/EP/CP Workers + 多硬件插件]
 ```
+
+![vLLM paged KV cache and universal serving architecture](assets/2026-08-04-vllm-serving-architecture-en.png)
+
+*图 3：以 PagedAttention 逻辑块到物理块映射为中心的 vLLM 架构（英文）。*
 
 核心机制：
 
@@ -190,6 +202,10 @@
   -> [TP/PP/DP + 可选 PD 分离]
   -> [NVIDIA / Ascend / Muxi / Hygon / Moore Threads / CPU]
 ```
+
+![Chitu production inference across diverse hardware](assets/2026-08-04-chitu-serving-architecture-en.png)
+
+*图 4：突出多元硬件适配与渐进部署规模的 Chitu 架构（英文）。*
 
 核心机制：
 
