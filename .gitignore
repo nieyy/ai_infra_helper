@@ -1,0 +1,26 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Raw execution evidence stays local by default.
+logs/**
+!logs/.gitkeep
+
+# Keep text patches when useful, but ignore opaque archives and binaries.
+patches/**/*.tar
+patches/**/*.tar.gz
+patches/**/*.tgz
+patches/**/*.zip
+patches/**/*.bin
+
+# Common temporary files
+*.swp
+*.tmp
+*.bak
