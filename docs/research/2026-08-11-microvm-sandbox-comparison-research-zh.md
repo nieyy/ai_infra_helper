@@ -11,6 +11,7 @@
 
 | 版本 | 日期 | 作者 | 摘要 |
 |---|---|---|---|
+| v0.2 | 2026-08-11 | Codex | 为 4.2.1～4.2.5 补充 5 张英文架构与机制说明图。 |
 | v0.1 | 2026-08-11 | Codex | 初版调研：汇总三条产品时间线、架构机制、能力差异、风险与选型建议。 |
 
 ## 1. 摘要
@@ -112,6 +113,10 @@
   -> [libcontainer starts OCI workload]
 ```
 
+![BoxLite embedded runtime architecture](assets/2026-08-11-boxlite-runtime-architecture-en.png)
+
+*Figure 1. BoxLite embedded runtime execution path and nested isolation boundaries.*
+
 - 重要行为: `create` 先返回轻量 handle，第一次需要 guest 的 API 才准备 rootfs、拉起 shim/VM 并等待 guest；libkrun 的 `krun_start_enter` 会接管进程，因此单独 shim 既保护宿主应用又提供 jailer 落点。
 - 边界 / 归属: 硬件虚拟化隔离 guest；jailer 进一步限制承载 VMM 的 host subprocess；guest 内 workload 仍通过 OCI runtime 管理。Linux jailer 使用 namespace、`pivot_root`、seccomp BPF、降权和 cgroups v2，macOS 使用 Seatbelt 与 rlimit。
 - 运行时或运维注意点: daemonless 降低集成门槛，却把容量、升级、镜像供应链、磁盘回收、host patch 和 HA 责任交给嵌入方；启用兼容性较宽松的安全默认值前，应按官方 threat model 复核安全 preset。
@@ -126,6 +131,10 @@
   -> [Box]
   -> [vsock -> gvproxy(gVisor stack) -> NAT/DNS -> allowed network]
 ```
+
+![BoxLite image storage and network data paths](assets/2026-08-11-boxlite-storage-network-en.png)
+
+*Figure 2. BoxLite image, storage, filesystem sharing, and network data paths.*
 
 - 重要行为: OCI layers 共享缓存，而每个 Box 的写入进入独立 QCOW2；host 目录可通过 virtiofs 以只读或读写方式共享。默认 gvproxy 提供用户态网络、DHCP/DNS、出网、TCP 发布和 tunnel。
 - 边界 / 归属: layer cache 是宿主共享优化，QCOW2 是 box 私有状态；host mount 和 network tunnel 是穿越 VM 边界的显式通道，必须视为安全策略的一部分。
@@ -143,6 +152,10 @@
   <-> [virtiofs workspace: direct RW or host-RO + private clone]
   -> [host egress proxy: policy decision + credential injection + audit]
 ```
+
+![Docker Sandboxes architecture](assets/2026-08-11-docker-sandboxes-architecture-en.png)
+
+*Figure 3. Docker Sandboxes trust boundary, private Docker engine, workspace modes, and host-side credential proxy.*
 
 - 重要行为: 智能体在 VM 内拥有 sudo，且不连接 host Docker socket，而是使用 VM 内私有 Docker Engine，因此能做 `docker build/run/compose`。内部 package、image、cache 在 stop/restart 后保留，在 `sbx rm` 后删除。
 - 边界 / 归属: microVM 是主要信任边界；host proxy 负责网络策略和密钥注入；组织治理可统一网络、文件系统和 MCP tool policy。每个 sandbox 的 Docker layers 默认不共享，换取隔离但增加磁盘和重复拉取。
@@ -163,6 +176,10 @@
   -> [/terminate -> TERMINATED]
 ```
 
+![AWS Lambda MicroVM image build and session lifecycle](assets/2026-08-11-aws-lambda-microvms-lifecycle-en.png)
+
+*Figure 4. AWS Lambda MicroVM reusable image snapshot and per-session suspend/resume lifecycle.*
+
 - 重要行为: 构建阶段就启动应用并捕获运行中进程的内存和磁盘，后续实例不是重复冷启动，而是从预初始化 Firecracker snapshot 恢复；挂起时保留当次会话的内存、进程和磁盘，自动恢复会暂存首个请求。
 - 边界 / 归属: 每 VM 有自己的 kernel、filesystem、network namespace 和 endpoint。入口必须使用短期 JWE token，并能按 port/range 授权；egress 可走公网或 VPC connector，后者受 security group/NACL 控制。
 - 运行时或运维注意点: 每 endpoint 只对应一个 VM，服务不自动提供跨 VM 负载均衡；会话最长 8 小时。恢复延迟取决于 checkpoint 大小和 `/resume` hook，失败会返回 502。数据库连接、临时凭据和租户唯一值需要在 hook 中刷新；terminate 前要把真正持久状态写到 S3/数据库等外部系统。
@@ -177,6 +194,10 @@ Lambda:   AWS control/data plane -> Firecracker VM -> AL2023 app processes
 共同的显式越界通道:
   files/volumes | network/proxy/connectors | credentials/tokens | control API/logging
 ```
+
+![MicroVM isolation boundary comparison](assets/2026-08-11-microvm-isolation-boundaries-comparison-en.png)
+
+*Figure 5. Isolation boundaries and explicitly authorized cross-boundary channels across the three products.*
 
 microVM 边界只解决 host/guest kernel 隔离的一部分问题。企业威胁模型还必须覆盖共享工作区、出网、秘密、镜像和 kit 供应链、控制面授权、日志泄密、资源耗尽及 snapshot 残留。
 
