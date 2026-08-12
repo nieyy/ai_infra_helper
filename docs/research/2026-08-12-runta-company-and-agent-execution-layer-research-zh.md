@@ -11,6 +11,7 @@
 
 | 版本 | 日期 | 作者 | 摘要 |
 |---|---|---|---|
+| v0.2 | 2026-08-12 | nieyuanyuan | 为 4.2.1～4.2.6 补充 6 张英文关键链路与机制说明图。 |
 | v0.1 | 2026-08-12 | nieyuanyuan | 初版调研，覆盖公司发展、产品架构、关键技术、商业模式、风险与未来方向。 |
 
 ## 1. 摘要
@@ -137,6 +138,10 @@
   -> [stdout / stderr / exit code / duration / truncation flags]
 ```
 
+![Runta runtime creation and command execution flow](assets/2026-08-12-runta-runtime-execution-flow-en.png)
+
+*Figure 1. Runta runtime creation, governance, resource coordination, and command execution path.*
+
 - 重要行为: runtime 创建时指定 vCPU、baseline/max memory、ingress、idle、egress、Token capture/compression 与可选 Agent manifest；命令既支持 buffered one-shot，也支持 interactive shell。
 - 边界 / 归属: Bearer token/API key 控制控制面；组织 RBAC 控制谁能创建 runtime、管理 secret 和 API key；runtime 是 Agent 代码的执行边界。
 - 运行时或运维注意点: 文档 API 的状态包括 `creating/running/paused/shutdown/suspended/crashed/error/deleting`，上层必须实现幂等、timeout、重试和终态对账。公开资料没有说明 underlying isolation，因此不能仅凭“isolated computer”推断 VM 级安全。
@@ -153,6 +158,10 @@
   -> [Approved External API]
   -> [Response returns to Agent]
 ```
+
+![Runta egress policy and secret stub flow](assets/2026-08-12-runta-egress-secret-stub-flow-en.png)
+
+*Figure 2. Egress policy evaluation and gateway-side secret injection without exposing real credentials to the Agent.*
 
 - 重要行为: Secret Stub 将 `${credential}` 替换为 tenant secret；同一规则可按 runtime 或 tenant default 配置。网络策略每次 set 都整体替换，并对 hostname/wildcard 做小写、排序和去重。
 - 边界 / 归属: Secret value 属于平台/组织管理面，Developer 可以使用已配置 secret 但看不到 Secrets 页面；Agent 只发无真实凭据的请求。
@@ -171,6 +180,10 @@
   -> [Prompt-ready context]
   -> [Model API through network boundary]
 ```
+
+![Runta Token X-Ray and context compression flow](assets/2026-08-12-runta-token-xray-compression-flow-en.png)
+
+*Figure 3. Optional Tool I/O capture, Token X-Ray analysis, type-aware compression, and pass-through behavior.*
 
 - 重要行为: Runta 不修改 runtime 内原始文件或原始 command result，而是在内容进入模型上下文前压缩；未知格式 passthrough。
 - 边界 / 归属: 这是 execution layer 对 Agent 经济性的差异化控制点，位于 tool output 与 model call 之间，能同时观察计算资源和 Token 消耗。
@@ -191,6 +204,10 @@
   -> [Continue Session]
 ```
 
+![Runta checkpoint fork and runtime lifecycle](assets/2026-08-12-runta-checkpoint-lifecycle-en.png)
+
+*Figure 4. Point-in-time checkpoint creation, restore-to-new-runtime fork semantics, and runtime lifecycle transitions.*
+
 - 重要行为: checkpoint 包括 filesystem 和 running processes，同一个 checkpoint 可多次 restore/fork；restore 的语义是创建新 runtime，而非原地回滚。
 - 边界 / 归属: runtime state 与用户创建的 checkpoint 都是 tenant 持久资产；paused/suspended/shutdown 仍保留 disk 并产生存储费。
 - 运行时或运维注意点: 外部数据库、queue、network connection、lease 和一次性 token 不会因为本地进程恢复自动获得一致性。应用需要 checkpoint hook、idempotency、credential refresh 和 side-effect commit boundary。
@@ -207,6 +224,10 @@
   -> [Published Service: <port>-<runtime-id>.runta.dev]
 ```
 
+![Runta resource scaling idle suspend and HTTPS wake flow](assets/2026-08-12-runta-resource-idle-ingress-flow-en.png)
+
+*Figure 5. Memory scaling, idle suspension, HTTPS-triggered wake, and ingress request forwarding.*
+
 - 重要行为: memory 从 baseline 到 max 纵向变化，不重建 runtime；idle coordinator 定期扫描；支持 HTTP/HTTPS ingress 与最多 16 个端口。
 - 边界 / 归属: Runta 负责基础设施 resource state 与入口代理，应用仍负责 readiness、auth、session、backpressure 和业务级限流。
 - 运行时或运维注意点: 突发内存尖峰仍可能 OOM；首次唤醒会增加请求延迟；只把 inbound HTTP 当 activity 可能误判后台任务。需验证长连接、WebSocket、异步 job 和无入口 Agent 的 idle 语义。
@@ -222,6 +243,10 @@
        -> [Optional email sender filtering]
   -> [OpenAI / Anthropic / OpenRouter / IMAP]
 ```
+
+![ClawShell local security proxy flow](assets/2026-08-12-clawshell-security-proxy-en.png)
+
+*Figure 6. ClawShell local privilege boundary, virtual-key mapping, DLP filtering, and controlled external access.*
 
 - 重要行为: real key 存在 `/etc/clawshell`，由专用 system user 和 Unix 权限隔离；支持 provider header 适配、OAuth device flow、token refresh 和部分请求格式转换。
 - 边界 / 归属: ClawShell 是本机 privileged process 与 Agent 之间的 filesystem/process boundary，不等于 Runta Cloud 的 tenant/runtime boundary。
