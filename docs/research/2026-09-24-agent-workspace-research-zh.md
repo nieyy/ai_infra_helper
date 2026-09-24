@@ -11,6 +11,7 @@
 
 | 版本 | 日期 | 作者 | 摘要 |
 |---|---|---|---|
+| v0.2 | 2026-09-24 | nieyuanyuan | 为 4.1.1 增加 Agent Workspace 概念图，为 4.1.2 增加 Agentore 整体架构图，说明持久资产与执行环境的关系及提案恢复边界。 |
 | v0.1 | 2026-09-24 | nieyuanyuan | 初版调研，分析 Agentore 提案，梳理 Workspace 的概念边界、代表实践、六条关键机制、场景构想和 PoC 验证要求。 |
 
 ## 1. 摘要
@@ -63,6 +64,10 @@
 
 一个直观例子：Agent 昨天读了 100 份材料，生成了分析脚本和半成品报告；今天换了计算节点、会话或模型，仍能找到原材料、知道哪一步已经完成、修改报告，并让人检查变更。支持这件事的持久工作对象、访问机制和协作边界共同组成 Workspace。
 
+![Agent Workspace concept: replaceable execution sessions sharing a persistent governed workspace](assets/2026-09-24-agent-workspace-concept-en.png)
+
+*图 1：Agent Workspace 概念图。会话和执行环境可以更换，同一逻辑工作空间中的输入、工作文件、能力与记忆、成果及证据仍可保留，并受身份、版本和共享规则管理。底层可以使用多个存储后端；资产留存不等于自动恢复进程或撤销外部操作。该图表达本文工作定义，不代表统一行业标准。*
+
 本次资料显示，相关能力已经存在，但各家使用的抽象不同：LangChain 使用文件后端和持久 Store，Anthropic 分离 Session、Harness 和 Sandbox，AWS 在 Runtime 上提供不同生命周期的持久存储。因此应先讨论能力与契约，再讨论是否采购一个名叫 Workspace 的产品。[Deep Agents Backends][S3]、[Managed Agents 架构][S2]、[AgentCore 文件系统配置][S6]
 
 | 概念 | 主要解决的问题 | 与 Workspace 的关系 | 不应推导出的能力 |
@@ -81,6 +86,10 @@
 #### 4.1.2 如何理解附件中的 Agentore
 
 附件提出把 Prompt、Skill、CLI、Memory、知识、对话历史、工作目录和产出物纳入统一命名空间，同时提供文件访问和平台/API/SDK 访问。底层划分为元数据面、数据/缓存面及对象存储，强调版本、快照、CoW、隔离与共享。[附件，第 1 页][S1]
+
+![Agentore proposed architecture: access interfaces, unified assets, governance, metadata and data planes, and versioned workspace](assets/2026-09-24-agentore-workspace-architecture-en.png)
+
+*图 2：根据附件重绘的 Agentore 提案整体架构。Agent 平台和执行环境通过可编程接口或文件访问入口使用持久资产层；统一命名空间与治理之下分别是元数据面、数据/缓存面和对象存储。右侧展示资产快照分叉及文件状态恢复。FUSE、virtiofs、CSI、NFS 是不同层次的接入选项，实际兼容性待验证；该图不表示已核实实现，也不包含 VM 内存或外部副作用回滚。*
 
 | 附件主张 | 本文理解 | 必须补充的证据或语义 |
 |---|---|---|
